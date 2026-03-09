@@ -28,3 +28,23 @@ output "configure_kubectl" {
   description = "Command to configure kubectl"
   value       = "aws eks update-kubeconfig --name ${aws_eks_cluster.main.name} --region ${var.aws_region}"
 }
+
+output "bastion_public_ip" {
+  description = "Bastion host public IP for SSH access"
+  value       = aws_instance.bastion.public_ip
+}
+
+output "ssh_bastion_command" {
+  description = "Command to SSH into bastion host"
+  value       = "ssh -i ~/.ssh/caf-eks-key.pem ec2-user@${aws_instance.bastion.public_ip}"
+}
+
+output "ssh_node1_via_bastion" {
+  description = "Command to SSH into EKS node 1 via bastion"
+  value       = "ssh -i ~/.ssh/caf-eks-key.pem -J ec2-user@${aws_instance.bastion.public_ip} ec2-user@10.0.10.130"
+}
+
+output "ssh_node2_via_bastion" {
+  description = "Command to SSH into EKS node 2 via bastion"
+  value       = "ssh -i ~/.ssh/caf-eks-key.pem -J ec2-user@${aws_instance.bastion.public_ip} ec2-user@10.0.11.137"
+}

@@ -29,6 +29,10 @@ resource "aws_eks_node_group" "main" {
 
   instance_types = [var.eks_node_instance_type]
 
+  remote_access {
+    ec2_ssh_key = "caf-eks-key"
+  }
+
   scaling_config {
     desired_size = var.eks_desired_capacity
     min_size     = var.eks_min_size
