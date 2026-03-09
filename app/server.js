@@ -11,8 +11,17 @@ app.get("/health", (req, res) => {
 app.get("/", (req, res) => {
   res.json({
     app: "CAF - Car Maintenance Tracker",
-    version: process.env.APP_VERSION || "1.0.0",
+    version: process.env.APP_VERSION || "2.0.0",
+    feature: "Service History Tracking",
   });
+});
+
+app.get("/api/services", (req, res) => {
+  res.json([
+    { id: 1, type: "Oil Change", interval_km: 10000 },
+    { id: 2, type: "Brake Inspection", interval_km: 20000 },
+    { id: 3, type: "Tire Rotation", interval_km: 15000 },
+  ]);
 });
 
 app.listen(PORT, () => {

@@ -1,6 +1,6 @@
 {
   "name": "caf-app",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "CAF - Car Maintenance Tracking Application",
   "main": "server.js",
   "scripts": {
