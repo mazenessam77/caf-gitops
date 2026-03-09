@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "app/**"
+      - ".github/workflows/**"
 
 env:
   AWS_REGION: us-east-1
@@ -62,9 +63,7 @@ jobs:
         with:
           context: ./app
           push: true
-          tags: |
-            ${{ steps.meta.outputs.FULL_IMAGE }}
-            ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+          tags: ${{ steps.meta.outputs.FULL_IMAGE }}
 
       # ------------------------------------------------------------------
       # 6. Update Kubernetes manifest with new image tag
