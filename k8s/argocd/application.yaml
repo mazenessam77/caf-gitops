@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: caf-app
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/mazenessam77/caf-gitops.git
+    targetRevision: main
+    path: k8s                     # directory containing deployment.yaml & service.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: caf
+
+  syncPolicy:
+    automated:
+      prune: true                 # delete resources removed from Git
+      selfHeal: true              # revert manual cluster changes to match Git
+    syncOptions:
+      - CreateNamespace=true      # auto-create the "caf" namespace
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 1m

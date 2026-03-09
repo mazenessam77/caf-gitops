@@ -1,0 +1,87 @@
+name: CAF CI Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: caf-app
+  K8S_MANIFEST_PATH: k8s/deployment.yaml
+
+jobs:
+  build-and-push:
+    name: Build, Push & Update Manifest
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write          # needed to push manifest changes
+
+    steps:
+      # ------------------------------------------------------------------
+      # 1. Checkout repository
+      # ------------------------------------------------------------------
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ------------------------------------------------------------------
+      # 2. Configure AWS credentials
+      # ------------------------------------------------------------------
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ------------------------------------------------------------------
+      # 3. Login to Amazon ECR
+      # ------------------------------------------------------------------
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ------------------------------------------------------------------
+      # 4. Generate image tag from short SHA
+      # ------------------------------------------------------------------
+      - name: Generate image metadata
+        id: meta
+        run: |
+          IMAGE_TAG="${GITHUB_SHA::7}"
+          FULL_IMAGE="${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${IMAGE_TAG}"
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "FULL_IMAGE=${FULL_IMAGE}" >> "$GITHUB_OUTPUT"
+
+      # ------------------------------------------------------------------
+      # 5. Build & push Docker image to ECR
+      # ------------------------------------------------------------------
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.FULL_IMAGE }}
+            ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+
+      # ------------------------------------------------------------------
+      # 6. Update Kubernetes manifest with new image tag
+      # ------------------------------------------------------------------
+      - name: Update K8s manifest
+        run: |
+          sed -i "s|image:.*${{ env.ECR_REPOSITORY }}.*|image: ${{ steps.meta.outputs.FULL_IMAGE }}|" ${{ env.K8S_MANIFEST_PATH }}
+
+      # ------------------------------------------------------------------
+      # 7. Commit & push the updated manifest
+      #    (Argo CD will detect this change and sync automatically)
+      # ------------------------------------------------------------------
+      - name: Commit and push manifest update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ${{ env.K8S_MANIFEST_PATH }}
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          git commit -m "ci: update CAF image tag to ${{ steps.meta.outputs.IMAGE_TAG }}"
+          git push
