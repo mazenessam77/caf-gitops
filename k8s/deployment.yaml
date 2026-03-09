@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: caf
-          image: 541405370428.dkr.ecr.us-east-1.amazonaws.com/caf-app:latest
+          image: 541405370428.dkr.ecr.us-east-1.amazonaws.com/caf-app:c856509
           ports:
             - containerPort: 3000
           env:
