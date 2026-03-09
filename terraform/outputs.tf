@@ -40,11 +40,19 @@ output "ssh_bastion_command" {
 }
 
 output "ssh_node1_via_bastion" {
-  description = "Command to SSH into EKS node 1 via bastion"
-  value       = "ssh -i ~/.ssh/caf-eks-key.pem -J ec2-user@${aws_instance.bastion.public_ip} ec2-user@10.0.10.130"
+  description = "Command to SSH into EKS node 1 via bastion (run: terraform output -raw ssh_node1_via_bastion)"
+  value       = "ssh -o IdentitiesOnly=yes -i ~/.ssh/caf-eks-key.pem -J ec2-user@${aws_instance.bastion.public_ip} ec2-user@$(aws ec2 describe-instances --region ${var.aws_region} --filters 'Name=tag:eks:cluster-name,Values=${aws_eks_cluster.main.name}' 'Name=instance-state-name,Values=running' --query 'Reservations[0].Instances[0].PrivateIpAddress' --output text)"
 }
 
 output "ssh_node2_via_bastion" {
-  description = "Command to SSH into EKS node 2 via bastion"
-  value       = "ssh -i ~/.ssh/caf-eks-key.pem -J ec2-user@${aws_instance.bastion.public_ip} ec2-user@10.0.11.137"
+  description = "Command to SSH into EKS node 2 via bastion (run: terraform output -raw ssh_node2_via_bastion)"
+  value       = "ssh -o IdentitiesOnly=yes -i ~/.ssh/caf-eks-key.pem -J ec2-user@${aws_instance.bastion.public_ip} ec2-user@$(aws ec2 describe-instances --region ${var.aws_region} --filters 'Name=tag:eks:cluster-name,Values=${aws_eks_cluster.main.name}' 'Name=instance-state-name,Values=running' --query 'Reservations[1].Instances[0].PrivateIpAddress' --output text)"
+}
+
+output "eks_node_ips" {
+  description = "Current private IPs of EKS worker nodes"
+  value = formatlist(
+    "ssh -o IdentitiesOnly=yes -i ~/.ssh/caf-eks-key.pem -J ec2-user@%s ec2-user@NODE_IP",
+    [aws_instance.bastion.public_ip]
+  )
 }
